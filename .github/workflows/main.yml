@@ -22,8 +22,8 @@ jobs:
           secedit /configure /db C:\windows\security\local.sdb /cfg C:\secpol.cfg /areas SECURITYPOLICY
           gpupdate /force
           
-          $username = "Oclavia"
-          $password = "Oclavian_Miraj"
+          $username = "Oclavian"
+          $password = "Oclavian_Coder"
           
           try {
               if (Get-LocalUser -Name $username -ErrorAction SilentlyContinue) {
