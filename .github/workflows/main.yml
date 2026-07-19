@@ -15,23 +15,34 @@ jobs:
           Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp' -Name "UserAuthentication" -Value 1 -Force
           Restart-Service -Name TermService -Force
 
-      - name: Create RDP User
+      - name: Disable Password Policy & Create RDP User
         run: |
-          # ইউজারনেম এবং পাসওয়ার্ড
+          # 1. পাসওয়ার্ড পলিসি ফাইল এক্সপোর্ট করা
+          secedit /export /cfg C:\secpol.cfg
+          
+          # 2. পাসওয়ার্ড কমপ্লেক্সিটি বন্ধ করা (অবশ্যই Unicode এনকোডিং ব্যবহার করতে হবে)
+          (Get-Content C:\secpol.cfg) -replace 'PasswordComplexity = 1', 'PasswordComplexity = 0' -replace 'MinimumPasswordLength = 7', 'MinimumPasswordLength = 0' | Set-Content C:\secpol.cfg -Encoding Unicode
+          
+          # 3. মডিফাই করা পলিসি সিস্টেমে অ্যাপ্লাই করা
+          secedit /configure /db C:\windows\security\local.sdb /cfg C:\secpol.cfg /areas SECURITYPOLICY
+          
+          # 4. পলিসি আপডেট ফোর্স করা
+          gpupdate /force
+          
           $username = "Oclavia"
           $password = "Oclavian_Miraj"
           
-          # ইউজার থাকলে ডিলিট করা (ErrorAction SilentlyContinue দিয়ে)
-          net user $username /delete | Out-Null
+          # 5. আগে থেকে ইউজার থাকলে সেফলি ডিলিট করা (কোনো লাল এরর দেখাবে না)
+          try {
+              if (Get-LocalUser -Name $username -ErrorAction SilentlyContinue) {
+                  Remove-LocalUser -Name $username -Force
+              }
+          } catch {}
           
-          # নতুন ইউজার তৈরি করা (পাসওয়ার্ডসহ)
-          net user $username $password /add
-          
-          # অ্যাডমিনিস্ট্রেটর গ্রুপে যুক্ত করা
-          net localgroup administrators $username /add
-          
-          # ইউজার যেন পাসওয়ার্ড পরিবর্তন করতে না পারে
-          net user $username /passwordchg:no
+          # 6. নতুন ইউজার তৈরি করা
+          $securePass = ConvertTo-SecureString $password -AsPlainText -Force
+          New-LocalUser -Name $username -Password $securePass -AccountNeverExpires
+          Add-LocalGroupMember -Group "Administrators" -Member $username
           
           echo "RDP_USER=$username" >> $env:GITHUB_ENV
           echo "RDP_PASS=$password" >> $env:GITHUB_ENV
