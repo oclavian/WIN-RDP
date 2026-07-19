@@ -18,14 +18,12 @@ jobs:
       - name: Create RDP User
         run: |
           $username = "Oclavia"
-          $password = "Oclavian_Miraj"
-          $securePass = ConvertTo-SecureString $password -AsPlainText -Force
+          $password = "Oclavian_Miraj2026#"
           
-          # যদি ইউজার আগে থেকে থাকে তবে তা রিমুভ করা হচ্ছে
-          if (Get-LocalUser -Name $username -ErrorAction SilentlyContinue) { Remove-LocalUser -Name $username }
-          
-          New-LocalUser -Name $username -Password $securePass -AccountNeverExpires
-          Add-LocalGroupMember -Group "Administrators" -Member $username
+          # ইউজার তৈরি (যদি আগে থাকে তবে রিমুভ করা হচ্ছে)
+          net user $username /delete | Out-Null
+          net user $username $password /add
+          net localgroup administrators $username /add
           
           echo "RDP_USER=$username" >> $env:GITHUB_ENV
           echo "RDP_PASS=$password" >> $env:GITHUB_ENV
