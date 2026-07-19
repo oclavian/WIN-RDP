@@ -17,13 +17,21 @@ jobs:
 
       - name: Create RDP User
         run: |
+          # ইউজারনেম এবং পাসওয়ার্ড
           $username = "Oclavia"
-          $password = "Oclavian_Miraj2026#"
+          $password = "Oclavian_Miraj"
           
-          # ইউজার তৈরি (যদি আগে থাকে তবে রিমুভ করা হচ্ছে)
+          # ইউজার থাকলে ডিলিট করা (ErrorAction SilentlyContinue দিয়ে)
           net user $username /delete | Out-Null
+          
+          # নতুন ইউজার তৈরি করা (পাসওয়ার্ডসহ)
           net user $username $password /add
+          
+          # অ্যাডমিনিস্ট্রেটর গ্রুপে যুক্ত করা
           net localgroup administrators $username /add
+          
+          # ইউজার যেন পাসওয়ার্ড পরিবর্তন করতে না পারে
+          net user $username /passwordchg:no
           
           echo "RDP_USER=$username" >> $env:GITHUB_ENV
           echo "RDP_PASS=$password" >> $env:GITHUB_ENV
